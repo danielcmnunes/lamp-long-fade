@@ -7,11 +7,14 @@ import json
 import humanize
 import datetime as dt
 from datetime import datetime
+import argparse
 
 from tapo import ApiClient
 
+VERBOSE = False
 def out(text):
-    print("%s: %s" %(datetime.now().strftime("%H:%M:%S"), text))
+    if VERBOSE:
+        print("%s: %s" %(datetime.now().strftime("%H:%M:%S"), text))
 
 def getValuesSchedule(start_brightness: int, end_brightness: int, time_span: float):
     """ returns tuple with:
@@ -120,19 +123,54 @@ async def longFade(client:ApiClient, lamp_ip:str, start_brightness:int, end_brig
     
     out("fade finished.")
     
+def parseArgs():    
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-s", "--start_brightness", type=int, help="brightness value between 0 and 100")
+    parser.add_argument("--verbose", help="increase output verbosity", action="store_true")
+    parser.add_argument("end_brightness", help="brightness value between 0 and 100", type=int)
+    parser.add_argument("duration", help="the duration of the dimming in minutes", type=int)
+        
+    arguments = parser.parse_args()
+    
+    if arguments.start_brightness:
+        sb = arguments.start_brightness
+        if sb < 0 or sb > 100:
+            print("start brightness value must be between 0 and 100")
+            exit()    
+    
+    if arguments.end_brightness:
+        eb = arguments.end_brightness
+        if eb < 0 or eb > 100:
+            print("end brightness value must be between 0 and 100")
+            exit()
+            
+    if arguments.duration:
+        d = arguments.duration
+        if d < 0 or d > 100:
+            print("duration value must be between 0 and 100")
+            exit()
+    
+    VERBOSE = arguments.verbose
+        
+    return arguments
+        
 def main():
-    #load credentials
     json_file_path = r"credentials.json"
+    
     with open(json_file_path, "r") as f:
         credentials = json.load(f)
         
-    username = credentials["username"]
-    password = credentials["password"]
-    lamp_ip = credentials["network_address"]
-    
-    client = ApiClient(username, password)
+        username = credentials["username"]
+        password = credentials["password"]
+        lamp_ip = credentials["network_address"]
                 
-    asyncio.run(longFade(client, lamp_ip, None, 10, 0.2))
+    args = parseArgs()
+    
+    print("args:")
+    print(args)
+    
+    client = ApiClient(username, password)                
+    asyncio.run(longFade(client, lamp_ip, args.start_brightness, args.end_brightness, args.duration))
 
 if __name__ == "__main__":
     main()
