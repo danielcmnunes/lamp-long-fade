@@ -146,10 +146,11 @@ def parseArgs():
             
     if arguments.duration:
         d = arguments.duration
-        if d < 0 or d > 100:
-            print("duration value must be between 0 and 100")
+        if d <= 0:
+            print("duration value must be more than 0")
             exit()
     
+    global VERBOSE
     VERBOSE = arguments.verbose
         
     return arguments
@@ -169,7 +170,8 @@ def main():
     print("args:")
     print(args)
     
-    client = ApiClient(username, password)                
+    client = ApiClient(username, password)
+    
     asyncio.run(longFade(client, lamp_ip, args.start_brightness, args.end_brightness, args.duration))
 
 if __name__ == "__main__":
